@@ -29,10 +29,10 @@ class Converter:
 
     def load(self):
         points = 0
+        print("Reading: ", self.path)
         with open(self.path, "rb") as f:
             while True:
                 line = f.readline()
-                print(line)
                 if line.startswith(b"#"):
                     pass
                 elif line.startswith(b"VERSION"):
@@ -54,10 +54,7 @@ class Converter:
                     line = line.split(b" ")
                     for idx, tmp in enumerate(line):
                         if idx != 0:
-                            if tmp == b"F":
-                                self.fields[idx-1].type = "f"
-                            else:
-                                print("tmp", tmp)
+                            self.fields[idx-1].type = tmp 
                 elif line.startswith(b"COUNT"):
                     pass
                 elif line.startswith(b"WIDTH"):
@@ -78,17 +75,30 @@ class Converter:
                         sys.exit(1)
                     break
             data = f.read()
-        print("Length of data: ", len(data), len(data)/4/4)
-        print("Length of data: ", len(data)/110589)
-        print("Length of data: ", len(data)/(points-1))
-        print(data[:10])
-        print(data[-10:])
-        print(self.fields)
+        print("Length of data: ", points)
+        print("Fields: ", self.fields)
         buf = io.BytesIO(data)
         fmt = ""
         size = 0
         for f in self.fields:
-            fmt += f.type
+            if f.type == b"F" and f.size == 4:
+                fmt += "f" 
+            elif f.type == b"F" and f.size == 8:
+                fmt += "d" 
+            elif f.type == b"I" and f.size == 1:
+                fmt += "b" 
+            elif f.type == b"I" and f.size == 2:
+                fmt += "h" 
+            elif f.type == b"I" and f.size == 4:
+                fmt += "i" 
+            elif f.type == b"U" and f.size == 1:
+                fmt += "B" 
+            elif f.type == b"U" and f.size == 2:
+                fmt += "H" 
+            elif f.type == b"U" and f.size == 4:
+                fmt += "I" 
+            else:
+                print("Uknown type: ", f.type)
             size += f.size
         #embed()
         for _ in range(points):
@@ -98,7 +108,7 @@ class Converter:
     def to_ply(self):
         header = """ply
 format ascii 1.0
-comment : laser scanner
+comment : pcd2ply 
 element vertex {}
 property float x
 property float y
