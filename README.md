@@ -6,4 +6,8 @@ Supported conversions, from and to:
 .ply (ascii)
 .xyz (ascii)
 
-Use: python converter.py original.format1 converted.format2 
+Use: 
+```sh
+$ python converter.py original.format1 converted.format2 
+ 
+```

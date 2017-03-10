@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import os
 import sys
 import struct
@@ -237,7 +239,13 @@ class Converter:
         with open(path, "wb") as f:
             f.write(header.encode())
             for pt in self.points:
-                f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
+                if not self._rgb:
+                    f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
+                else:
+                    #TODO: calculate rgb value from three RGB values
+                    # pt[4] = TODO rgb
+                    #f.write("{} {} {} {}\n".format(pt[0], pt[1], pt[2], pt[3]).encode())
+                    f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
 
     def generate_header(self):
         if self.extension_conv == '.ply':
@@ -252,20 +260,28 @@ end_header\n""".format(len(self.points))
 
         elif self.extension_conv == '.pcd':
             if self._rgb:
-                fields = 'x y z rgb'
+                #TODO calculate rgb value from three R G B values
+                #fields = 'x y z rgb'
+                #size = '4 4 4 4'
+                #typ = 'F F F 4'
+                fields = 'x y z'
+                size = '4 4 4'
+                typ = 'F F F'
             else:
                 fields = 'x y z'
+                size = '4 4 4'
+                typ = 'F F F'
 
             header = """# .PCD v0.7 - PointCloud Data file format
 VERSION 0.7
 FIELDS {0}
-SIZE 4 4 4
-TYPE F F F
-WIDTH {1}
+SIZE {1}
+TYPE {2}
+WIDTH {3}
 HEIGHT 1
 VIEWPOINT 0 0 0 1 0 0 0
-POINTS {2}
-DATA ascii\n""".format(fields, len(self.points), len(self.points))
+POINTS {4}
+DATA ascii\n""".format(fields, size, typ, len(self.points), len(self.points))
 
         elif self.extension_conv == '.xyz':
             header = ''
