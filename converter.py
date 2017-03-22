@@ -229,7 +229,7 @@ class Converter:
                 xyz = line.split()
                 if len(xyz) > 3:
                     self._rgb = True
-                if xyz[0] != 'nan':
+                if xyz[0] != b'nan':
                     self.points.append(xyz)
 
     def convert(self):
@@ -296,9 +296,12 @@ DATA ascii\n""".format(fields, size, typ, len(self.points), len(self.points))
         for num, pt in enumerate(self.points):
             self.points[num] = [pt[0].decode(), pt[1].decode(), pt[2].decode()]
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) != 3:
         print("usage: converter <original.format1> <converted.format2>")
         print("formats supported: .ply, .pcd, .xyz, .xyz+RGB")
         sys.exit(1)
     c = Converter(sys.argv[1], sys.argv[2])
+
+if __name__ == "__main__":
+    main()
