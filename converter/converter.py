@@ -7,7 +7,6 @@ import io
 
 from IPython import embed
 
-
 class Field:
     def __init__(self, name):
         self.name = name
@@ -38,6 +37,8 @@ class Converter:
             self.load_pcd()
         elif self.extension_ori == ".ply":
             self.load_ply()
+        elif self.extension_ori == ".zdf":
+            self.load_zdf()
         elif self.extension_ori == ".xyz":
             self.load_xyz()
         else:
@@ -223,6 +224,18 @@ class Converter:
                 pt = struct.unpack(fmt, buf.read(size))
                 self.points.append(pt)
 
+    def load_zdf(self):
+        from netCDF4 import Dataset
+        import numpy as np
+
+        f = Dataset(self.path_ori,'r')
+        pc = f['data']['pointcloud'][:,:,:]
+        pc_reshaped = pc.reshape(pc.shape[0]*pc.shape[1], pc.shape[2])
+
+        for pt in pc_reshaped:
+            if not np.isnan(pt[0]):
+                self.points.append(pt)
+
     def load_xyz(self):
         with open(self.path_ori, 'rb') as f:
             for line in f:
@@ -294,8 +307,12 @@ DATA ascii\n""".format(fields, size, typ, len(self.points), len(self.points))
 
     def decode_points(self):
         for num, pt in enumerate(self.points):
-            self.points[num] = [pt[0].decode(), pt[1].decode(), pt[2].decode()]
-
+            if isinstance(pt[0], str):
+                self.points[num] = [pt[0].decode(), pt[1].decode(), pt[2].decode()]
+            elif isinstance(pt[0], int):
+                break
+                
+            
 def main():
     if len(sys.argv) != 3:
         print("usage: converter <original.format1> <converted.format2>")
