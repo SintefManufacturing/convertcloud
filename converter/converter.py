@@ -27,6 +27,7 @@ class Converter:
         self.path_conv = path_convert
 
         self._rgb = None
+        self._rgba = None
         self._decode = None
 
         self.points = []
@@ -229,47 +230,92 @@ class Converter:
         import numpy as np
 
         f = Dataset(self.path_ori,'r')
-        pc = f['data']['pointcloud'][:,:,:]
+        xyz = f['data']['pointcloud'][:,:,:]
+        img = f['data']['rgba_image'][:,:,:]
+        f.close()
+
+        pc = np.dstack([xyz, img])
         pc_reshaped = pc.reshape(pc.shape[0]*pc.shape[1], pc.shape[2])
+
+        self._rgba = True
 
         for pt in pc_reshaped:
             if not np.isnan(pt[0]):
                 self.points.append(pt)
+            else:
+                self.points.append([0,0,0,0,0,0,255])
 
     def load_xyz(self):
         with open(self.path_ori, 'rb') as f:
             for line in f:
                 xyz = line.split()
-                if len(xyz) > 3:
-                    self._rgb = True
                 if xyz[0] != b'nan':
                     self.points.append(xyz)
+                else:
+                    self.points.append(len(xyz)*[0])
+
+            if len(xyz) == 6:
+                self._rgb = True
+            elif len(xyz) == 7:
+                self._rgba = True
 
     def convert(self):
         path = self.path_conv
         print('Saving point cloud to', path)
         header = self.generate_header()
+
         with open(path, "wb") as f:
             f.write(header.encode())
             for pt in self.points:
-                if not self._rgb:
-                    f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
+                if self._rgb:
+                    if self.extension_conv == '.ply':
+                        f.write("{} {} {} {} {} {}\n".format(\
+                                pt[0], pt[1], pt[2],\
+                                int(pt[3]), int(pt[4]), int(pt[5])).encode())
+
+                    elif self.extension_conv == '.pcd':
+                        #TODO: calculate rgb value from three RGB values
+                        # pt[4] = TODO rgb
+                        #f.write("{} {} {} {}\n".format(pt[0], pt[1], pt[2], pt[3]).encode())
+                        f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
+
+                elif self._rgba:
+                    if self.extension_conv == '.ply':
+                        f.write("{} {} {} {} {} {} {}\n".format(\
+                                pt[0], pt[1], pt[2],\
+                                int(pt[3]), int(pt[4]), int(pt[5]), int(pt[6])).encode())
+
+                    elif self.extension_conv == '.pcd':
+                        #TODO: calculate rgb value from three RGB values
+                        # pt[4] = TODO rgb
+                        #f.write("{} {} {} {}\n".format(pt[0], pt[1], pt[2], pt[3]).encode())
+                        f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
                 else:
-                    #TODO: calculate rgb value from three RGB values
-                    # pt[4] = TODO rgb
-                    #f.write("{} {} {} {}\n".format(pt[0], pt[1], pt[2], pt[3]).encode())
                     f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
 
     def generate_header(self):
         if self.extension_conv == '.ply':
-            header = """ply
-format ascii 1.0
-comment : pcd2ply
-element vertex {}
-property float x
-property float y
-property float z
-end_header\n""".format(len(self.points))
+
+            properties = "property float x\n" \
+                       + "property float y\n" \
+                       + "property float z\n"
+
+            if self._rgb:
+                properties += "property uchar red\n" \
+                            + "property uchar green\n" \
+                            + "property uchar blue\n"
+            elif self._rgba:
+                properties += "property uchar red\n" \
+                            + "property uchar green\n" \
+                            + "property uchar blue\n" \
+                            + "property uchar alpha\n"
+
+            header = 'ply\n' \
+                   + "format ascii 1.0\n" \
+                   + "comment https://github.com/SintefRaufossManufacturing/pcd2ply\n" \
+                   + "element vertex {}\n".format(len(self.points)) \
+                   + properties \
+                   + "end_header\n"
 
         elif self.extension_conv == '.pcd':
             if self._rgb:
@@ -277,24 +323,24 @@ end_header\n""".format(len(self.points))
                 #fields = 'x y z rgb'
                 #size = '4 4 4 4'
                 #typ = 'F F F 4'
-                fields = 'x y z'
-                size = '4 4 4'
-                typ = 'F F F'
+                fields = "x y z"
+                size = "4 4 4"
+                typ = "F F F"
             else:
-                fields = 'x y z'
-                size = '4 4 4'
-                typ = 'F F F'
+                fields = "x y z"
+                size = "4 4 4"
+                typ = "F F F"
 
-            header = """# .PCD v0.7 - PointCloud Data file format
-VERSION 0.7
-FIELDS {0}
-SIZE {1}
-TYPE {2}
-WIDTH {3}
-HEIGHT 1
-VIEWPOINT 0 0 0 1 0 0 0
-POINTS {4}
-DATA ascii\n""".format(fields, size, typ, len(self.points), len(self.points))
+            header = "# .PCD v0.7 - PointCloud Data file format\n" \
+                   + "VERSION 0.7\n" \
+                   + "FIELDS {}\n".format(fields) \
+                   + "SIZE {}\n".format(size) \
+                   + "TYPE {}\n".format(typ) \
+                   + "WIDTH {}\n".format(len(self.points)) \
+                   + "HEIGHT 1\n" \
+                   + "VIEWPOINT 0 0 0 1 0 0 0\n" \
+                   + "POINTS {}\n".format(len(self.points)) \
+                   + "DATA ascii\n"
 
         elif self.extension_conv == '.xyz':
             header = ''
