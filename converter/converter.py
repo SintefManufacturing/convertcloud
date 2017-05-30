@@ -268,28 +268,15 @@ class Converter:
             f.write(header.encode())
             for pt in self.points:
                 if self._rgb:
-                    if self.extension_conv == '.ply':
-                        f.write("{} {} {} {} {} {}\n".format(\
-                                pt[0], pt[1], pt[2],\
-                                int(pt[3]), int(pt[4]), int(pt[5])).encode())
-
-                    elif self.extension_conv == '.pcd':
-                        #TODO: calculate rgb value from three RGB values
-                        # pt[4] = TODO rgb
-                        #f.write("{} {} {} {}\n".format(pt[0], pt[1], pt[2], pt[3]).encode())
-                        f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
+                    f.write("{} {} {} {} {} {}\n".format(\
+                            pt[0], pt[1], pt[2],\
+                            int(pt[3]), int(pt[4]), int(pt[5])).encode())
 
                 elif self._rgba:
-                    if self.extension_conv == '.ply':
-                        f.write("{} {} {} {} {} {} {}\n".format(\
-                                pt[0], pt[1], pt[2],\
-                                int(pt[3]), int(pt[4]), int(pt[5]), int(pt[6])).encode())
+                    f.write("{} {} {} {} {} {} {}\n".format(\
+                            pt[0], pt[1], pt[2],\
+                            int(pt[3]), int(pt[4]), int(pt[5]), int(pt[6])).encode())
 
-                    elif self.extension_conv == '.pcd':
-                        #TODO: calculate rgb value from three RGB values
-                        # pt[4] = TODO rgb
-                        #f.write("{} {} {} {}\n".format(pt[0], pt[1], pt[2], pt[3]).encode())
-                        f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
                 else:
                     f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
 
@@ -318,18 +305,18 @@ class Converter:
                    + "end_header\n"
 
         elif self.extension_conv == '.pcd':
-            if self._rgb:
-                #TODO calculate rgb value from three R G B values
-                #fields = 'x y z rgb'
-                #size = '4 4 4 4'
-                #typ = 'F F F 4'
-                fields = "x y z"
-                size = "4 4 4"
-                typ = "F F F"
-            else:
-                fields = "x y z"
-                size = "4 4 4"
-                typ = "F F F"
+            fields = "x y z"
+            size = "4 4 4"
+            typ = "F F F"
+            if self._rgb or self._rgba:
+                #TODO calculate rgb value from three R G B values (bitshift)
+                fields += " r g b"
+                size += " 4 4 4"
+                typ += " 4 4 4"
+            elif self._rgba:
+                fields += " r g b a"
+                size += " 4 4 4 4"
+                typ += " 4 4 4 4"
 
             header = "# .PCD v0.7 - PointCloud Data file format\n" \
                    + "VERSION 0.7\n" \
