@@ -19,12 +19,7 @@ class Field:
 
 
 class Converter:
-    def __init__(self, path_origin, path_convert):
-        self.basename_ori, self.extension_ori = self.get_name(path_origin)
-        self.basename_conv, self.extension_conv = self.get_name(path_convert)
-
-        self.path_ori = path_origin
-        self.path_conv = path_convert
+    def __init__(self):
 
         self._rgb = None
         self._rgba = None
@@ -33,20 +28,22 @@ class Converter:
         self.points = []
         self.fields = []
 
-        print("Reading: ", self.path_ori)
-        if self.extension_ori == ".pcd":
-            self.load_pcd()
-        elif self.extension_ori == ".ply":
-            self.load_ply()
-        elif self.extension_ori == ".zdf":
-            self.load_zdf()
-        elif self.extension_ori == ".xyz":
-            self.load_xyz()
+    def load_points(self, path):
+
+        print("Reading: ", path)
+        name, extension = self.get_name(path)
+        if extension == ".pcd":
+            self.load_pcd(path)
+        elif extension == ".ply":
+            self.load_ply(path)
+        elif extension == ".zdf":
+            self.load_zdf(path)
+        elif extension == ".xyz":
+            self.load_xyz(path)
         else:
             print("Error: Unknown file extension")
 
         self.decode_points()
-        self.convert()
 
     def get_name(self, path):
         """
@@ -54,14 +51,13 @@ class Converter:
         """
         return os.path.splitext(os.path.basename(path))
 
-    def load_pcd(self):
+    def load_pcd(self, path):
         _ascii = False
         _binary = False
         _bcompressed = False
 
         points = 0
-        #print(self.path_ori)
-        with open(self.path_ori, "rb") as f:
+        with open(path, "rb") as f:
             while True:
                 line = f.readline()
                 if line.startswith(b"#"):
@@ -162,12 +158,12 @@ class Converter:
                 break
                 self.points.append(pt)
 
-    def load_ply(self):
+    def load_ply(self, path):
         _ascii = False
         _binary = False
 
         points = 0
-        with open(self.path_ori, "rb") as f:
+        with open(path, "rb") as f:
             while True:
                 line = f.readline()
                 if line.startswith(b"ply"):
@@ -225,11 +221,11 @@ class Converter:
                 pt = struct.unpack(fmt, buf.read(size))
                 self.points.append(pt)
 
-    def load_zdf(self):
+    def load_zdf(self, path):
         from netCDF4 import Dataset
         import numpy as np
 
-        f = Dataset(self.path_ori,'r')
+        f = Dataset(path,'r')
         xyz = f['data']['pointcloud'][:,:,:]
         img = f['data']['rgba_image'][:,:,:]
         f.close()
@@ -245,8 +241,8 @@ class Converter:
             else:
                 self.points.append([0,0,0,0,0,0,255])
 
-    def load_xyz(self):
-        with open(self.path_ori, 'rb') as f:
+    def load_xyz(self, path):
+        with open(path, 'rb') as f:
             for line in f:
                 xyz = line.split()
                 if xyz[0] != b'nan':
@@ -259,10 +255,10 @@ class Converter:
             elif len(xyz) == 7:
                 self._rgba = True
 
-    def convert(self):
-        path = self.path_conv
+    def convert(self, path):
         print('Saving point cloud to', path)
-        header = self.generate_header()
+        name, extension = self.get_name(path)
+        header = self.generate_header(extension)
 
         with open(path, "wb") as f:
             f.write(header.encode())
@@ -280,8 +276,8 @@ class Converter:
                 else:
                     f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
 
-    def generate_header(self):
-        if self.extension_conv == '.ply':
+    def generate_header(self, extension):
+        if extension == '.ply':
 
             properties = "property float x\n" \
                        + "property float y\n" \
@@ -304,7 +300,7 @@ class Converter:
                    + properties \
                    + "end_header\n"
 
-        elif self.extension_conv == '.pcd':
+        elif extension == '.pcd':
             fields = "x y z"
             size = "4 4 4"
             typ = "F F F"
@@ -329,11 +325,11 @@ class Converter:
                    + "POINTS {}\n".format(len(self.points)) \
                    + "DATA ascii\n"
 
-        elif self.extension_conv == '.xyz':
+        elif extension == '.xyz':
             header = ''
 
         else:
-            print("Error: Can't convert to {}".format(self.extension_conv))
+            print("Error: Can't convert to {}".format(extension))
             sys.exit(1)
 
         return header
@@ -349,9 +345,13 @@ class Converter:
 def main():
     if len(sys.argv) != 3:
         print("usage: converter <original.format1> <converted.format2>")
-        print("formats supported: .ply, .pcd, .xyz, .xyz+RGB")
+        print("formats supported: .ply, .pcd, .xyz, .zdf")
         sys.exit(1)
-    c = Converter(sys.argv[1], sys.argv[2])
+
+    c = Converter()
+
+    c.load_points(sys.argv[1])
+    c.convert(sys.argv[2])
 
 if __name__ == "__main__":
     main()
