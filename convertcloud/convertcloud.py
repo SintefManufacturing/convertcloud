@@ -5,6 +5,8 @@ import sys
 import struct
 import io
 
+import numpy as np
+
 from IPython import embed
 
 class Field:
@@ -29,6 +31,8 @@ class Converter:
         self.fields = []
 
     def load_points(self, path):
+        self.points = []
+        self.fields = []
 
         print("Reading: ", path)
         name, extension = self._get_name(path)
@@ -161,7 +165,6 @@ class Converter:
                 self._rgb = True
             for _ in range(points):
                 pt = struct.unpack(fmt, buf.read(size))
-                embed()
                 break
                 self.points.append(pt)
 
@@ -230,7 +233,6 @@ class Converter:
 
     def _load_zdf(self, path):
         from netCDF4 import Dataset
-        import numpy as np
 
         f = Dataset(path,'r')
         xyz = f['data']['pointcloud'][:,:,:]
@@ -347,6 +349,8 @@ class Converter:
                 self.points[num] = [val.decode() for val in point]
             else:
                 break
+
+        self.points = np.array(self.points).astype("float32")
                 
             
 def main():
