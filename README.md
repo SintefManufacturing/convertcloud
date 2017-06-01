@@ -1,13 +1,24 @@
-# Pointcloud converter
+# Convertcloud
 
-Supported conversions, from and to:
+Simple pointcloud format converter. Supported conversions, from and to:
 
 .pcd (ascii)
 .ply (ascii)
 .xyz (ascii)
+.zdf (ascii)
 
-Use: 
+Use from shell: 
 ```sh
-$ python converter.py original.format1 converted.format2 
+$ convertcloud original.format1 converted.format2 
  
 ```
+
+Use from python:
+```python
+import convertcloud
+
+cvc = convertcloud.Converter()
+cvc.load_points("original.format1")
+cvc.convert("converted.format2")
+```
+

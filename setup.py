@@ -2,16 +2,16 @@ from setuptools import setup
 
 setup(name="convertcloud",
       version="0.0.1",
-      description="Simple pointcloud converter",
-      author="alvcap",
-      author_email="kape013@gmail.com",
-      url='https://github.com/alvcap/pointcloud-converter',
-      packages=["converter"],
-      provides=["converter"],
+      description="Pointcloud format converter",
+      author="Alvaro Capellan",
+      author_email="capellan.alvaro@gmail.com",
+      url="https://github.com/alvcap/convertcloud",
+      packages=["convertcloud"],
+      provides=["convertcloud"],
       license="GNU General Public License v3",
 
-      entry_points={'console_scripts':
-          ['convertcloud = converter.converter:main']
+      entry_points={"console_scripts":
+          ["convertcloud = convertcloud.convertcloud:main"]
                     },
       classifiers=[
             "Programming Language :: Python",
@@ -19,6 +19,6 @@ setup(name="convertcloud",
             "Development Status :: 4 - Beta",
             "Intended Audience :: Developers",
             "Operating System :: OS Independent",
-            "Topic :: Office/Business :: Financial"
+            "Topic :: Scientific/Engineering"
       ]
       )
