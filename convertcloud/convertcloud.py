@@ -45,6 +45,13 @@ class Converter:
 
         self._decode_points()
 
+        for field in self.fields:
+            if field.name == 'red' and self._rgba == None:
+                self._rgb = True
+            elif field.name == 'alpha':
+                self._rgba = True
+                self._rgb = False
+
     def _get_name(self, path):
         """
         Returns basename and extension of path
@@ -191,8 +198,8 @@ class Converter:
                     line = line.strip()
                     line = line.split(b" ")
 
-                    self.fields.append(Field(line[2]))
-                    self.fields[-1].type = line[1]
+                    self.fields.append(Field(line[2].decode()))
+                    self.fields[-1].type = line[1].decode()
                     self.fields[-1].size = 4
 
                 elif line.startswith(b"end_header"):
@@ -335,10 +342,10 @@ class Converter:
         return header
 
     def _decode_points(self):
-        for num, pt in enumerate(self.points):
-            if isinstance(pt[0], str):
-                self.points[num] = [pt[0].decode(), pt[1].decode(), pt[2].decode()]
-            elif isinstance(pt[0], int):
+        for num, point in enumerate(self.points):
+            if isinstance(point[0], bytes):
+                self.points[num] = [val.decode() for val in point]
+            else:
                 break
                 
             
