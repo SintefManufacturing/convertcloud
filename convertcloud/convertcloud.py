@@ -31,27 +31,27 @@ class Converter:
     def load_points(self, path):
 
         print("Reading: ", path)
-        name, extension = self.get_name(path)
+        name, extension = self._get_name(path)
         if extension == ".pcd":
-            self.load_pcd(path)
+            self._load_pcd(path)
         elif extension == ".ply":
-            self.load_ply(path)
+            self._load_ply(path)
         elif extension == ".zdf":
-            self.load_zdf(path)
+            self._load_zdf(path)
         elif extension == ".xyz":
-            self.load_xyz(path)
+            self._load_xyz(path)
         else:
             print("Error: Unknown file extension")
 
-        self.decode_points()
+        self._decode_points()
 
-    def get_name(self, path):
+    def _get_name(self, path):
         """
         Returns basename and extension of path
         """
         return os.path.splitext(os.path.basename(path))
 
-    def load_pcd(self, path):
+    def _load_pcd(self, path):
         _ascii = False
         _binary = False
         _bcompressed = False
@@ -158,7 +158,7 @@ class Converter:
                 break
                 self.points.append(pt)
 
-    def load_ply(self, path):
+    def _load_ply(self, path):
         _ascii = False
         _binary = False
 
@@ -221,7 +221,7 @@ class Converter:
                 pt = struct.unpack(fmt, buf.read(size))
                 self.points.append(pt)
 
-    def load_zdf(self, path):
+    def _load_zdf(self, path):
         from netCDF4 import Dataset
         import numpy as np
 
@@ -241,7 +241,7 @@ class Converter:
             else:
                 self.points.append([0,0,0,0,0,0,255])
 
-    def load_xyz(self, path):
+    def _load_xyz(self, path):
         with open(path, 'rb') as f:
             for line in f:
                 xyz = line.split()
@@ -257,8 +257,8 @@ class Converter:
 
     def convert(self, path):
         print('Saving point cloud to', path)
-        name, extension = self.get_name(path)
-        header = self.generate_header(extension)
+        name, extension = self._get_name(path)
+        header = self._generate_header(extension)
 
         with open(path, "wb") as f:
             f.write(header.encode())
@@ -276,7 +276,7 @@ class Converter:
                 else:
                     f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
 
-    def generate_header(self, extension):
+    def _generate_header(self, extension):
         if extension == '.ply':
 
             properties = "property float x\n" \
@@ -334,7 +334,7 @@ class Converter:
 
         return header
 
-    def decode_points(self):
+    def _decode_points(self):
         for num, pt in enumerate(self.points):
             if isinstance(pt[0], str):
                 self.points[num] = [pt[0].decode(), pt[1].decode(), pt[2].decode()]
