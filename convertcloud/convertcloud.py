@@ -45,7 +45,8 @@ class Converter:
         elif extension == ".xyz":
             self._load_xyz(path)
         else:
-            print("Error: Unknown file extension")
+            print("Error: Unknown file extension {}".format(extension))
+            sys.exit()
 
         self._decode_points()
 
