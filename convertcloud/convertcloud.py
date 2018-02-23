@@ -46,6 +46,9 @@ class Converter:
             self._load_xyz(path)
         elif extension in [".stl", ".STL"]:
             self._load_stl(path)
+        elif extension == ".a3d":
+            # Scorpion vision format
+            self._load_a3d(path)
         else:
             print("Error: Unknown file extension {}".format(extension))
             sys.exit(1)
@@ -254,11 +257,13 @@ class Converter:
                 self.points.append([0,0,0,0,0,0,255])
 
     def _load_xyz(self, path):
+        import ast
+
         with open(path, 'rb') as f:
             for line in f:
                 xyz = line.split()
                 if xyz[0] != b'nan':
-                    self.points.append(xyz)
+                    self.points.append([float(val) for val in xyz])
                 else:
                     self.points.append(len(xyz)*[0])
 
@@ -273,6 +278,18 @@ class Converter:
         stlmesh = mesh.Mesh.from_file(path)
         vects = stlmesh.data["vectors"]
         self.points = vects.reshape(vects.shape[0]*vects.shape[1], vects.shape[2])
+
+    def _load_a3d(self, path):
+        import ast
+
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.replace("\n", "")
+                xyzraw = line.split(",")
+                xyz = "[{}.{}, {}.{}, {}.{}]".format(xyzraw[0], xyzraw[1], \
+                                                     xyzraw[2], xyzraw[3], \
+                                                     xyzraw[4], xyzraw[5])
+                self.points.append(ast.literal_eval(xyz))
 
     def convert(self, path):
         print('Saving point cloud to', path)
