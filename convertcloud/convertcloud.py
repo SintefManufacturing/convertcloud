@@ -44,9 +44,11 @@ class Converter:
             self._load_zdf(path)
         elif extension == ".xyz":
             self._load_xyz(path)
+        elif extension in [".stl", ".STL"]:
+            self._load_stl(path)
         else:
             print("Error: Unknown file extension {}".format(extension))
-            sys.exit()
+            sys.exit(1)
 
         self._decode_points()
 
@@ -265,6 +267,13 @@ class Converter:
             elif len(xyz) == 7:
                 self._rgba = True
 
+    def _load_stl(self, path):
+        from stl import mesh
+
+        stlmesh = mesh.Mesh.from_file(path)
+        vects = stlmesh.data["vectors"]
+        self.points = vects.reshape(vects.shape[0]*vects.shape[1], vects.shape[2])
+
     def convert(self, path):
         print('Saving point cloud to', path)
         name, extension = self._get_name(path)
@@ -305,7 +314,7 @@ class Converter:
 
             header = 'ply\n' \
                    + "format ascii 1.0\n" \
-                   + "comment https://github.com/SintefRaufossManufacturing/pcd2ply\n" \
+                   + "comment https://github.com/SintefRaufossManufacturing/convertcloud\n" \
                    + "element vertex {}\n".format(len(self.points)) \
                    + properties \
                    + "end_header\n"
