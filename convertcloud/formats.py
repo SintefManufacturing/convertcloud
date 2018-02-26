@@ -1,13 +1,4 @@
-#! /usr/bin/env python
-
-import os
-import sys
-import struct
-import io
-
 import numpy as np
-
-from IPython import embed
 
 class Field:
     def __init__(self, name):
@@ -19,61 +10,26 @@ class Field:
         return "Field(name={}, size={}, type={})".format(self.name, self.size, self.type)
     __repr__ = __str__
 
+class Load(object):
 
-class Converter:
-    def __init__(self):
-
-        self._rgb = None
-        self._rgba = None
-        self._decode = None
-
-        self.points = []
-        self.fields = []
-
-    def load_points(self, path):
-        self.points = []
-        self.fields = []
-
-        print("Reading: ", path)
-        name, extension = self._get_name(path)
-        if extension == ".pcd":
-            self._load_pcd(path)
-        elif extension == ".ply":
-            self._load_ply(path)
-        elif extension == ".zdf":
-            self._load_zdf(path)
-        elif extension == ".xyz":
-            self._load_xyz(path)
-        elif extension in [".stl", ".STL"]:
-            self._load_stl(path)
-        elif extension == ".a3d":
-            # Scorpion vision format
-            self._load_a3d(path)
-        else:
-            print("Error: Unknown file extension {}".format(extension))
-            sys.exit(1)
-
-        self._decode_points()
-
-        for field in self.fields:
-            if field.name == 'red' and self._rgba == None:
-                self._rgb = True
-            elif field.name == 'alpha':
-                self._rgba = True
-                self._rgb = False
-
-    def _get_name(self, path):
+    def pcd(self, path):
         """
-        Returns basename and extension of path
-        """
-        return os.path.splitext(os.path.basename(path))
+        Parse a file in .pcd format
 
-    def _load_pcd(self, path):
+        Args:
+          path (string): Path to file to be loaded
+        Returns:
+          points (numpy array): Loaded points
+          fields (Field object): Pointcloud field information
+        """
+        fields = []
+        points = []
+
         _ascii = False
         _binary = False
         _bcompressed = False
 
-        points = 0
+        nr_pts = 0
         with open(path, "rb") as f:
             while True:
                 line = f.readline()
@@ -86,19 +42,19 @@ class Converter:
                     line = line.split(b" ")
                     for idx, field in enumerate(line):
                         if idx != 0:
-                            self.fields.append(Field(field))
+                            fields.append(Field(field))
                 elif line.startswith(b"SIZE"):
                     line = line.strip()
                     line = line.split(b" ")
                     for idx, size in enumerate(line):
                         if idx != 0:
-                            self.fields[idx-1].size = int(size)
+                            fields[idx-1].size = int(size)
                 elif line.startswith(b"TYPE"):
                     line = line.strip()
                     line = line.split(b" ")
                     for idx, tmp in enumerate(line):
                         if idx != 0:
-                            self.fields[idx-1].type = tmp 
+                            fields[idx-1].type = tmp 
                 elif line.startswith(b"COUNT"):
                     pass
                 elif line.startswith(b"WIDTH"):
@@ -109,7 +65,7 @@ class Converter:
                     pass
                 elif line.startswith(b"POINTS"):
                     line = line.split(b" ")
-                    points = int(line[1])
+                    nr_pts = int(line[1])
                 elif line.startswith(b"DATA"):
                     line = line.strip()
                     line = line.split(b" ")
@@ -130,7 +86,7 @@ class Converter:
             if _ascii:
                 for line in f:
                     pt = line.split()
-                    self.points.append(pt)
+                    points.append(pt)
 
             if _binary:
                 data = f.read()
@@ -139,14 +95,14 @@ class Converter:
                 compressed_data = f.read()
                 data = lzf.decompress(compressed_data, len(compressed_data))
 
-            #print("Length of data: ", points)
-            #print("Fields: ", self.fields)
+            #print("Length of data: ", nr_pts)
+            #print("Fields: ", fields)
 
         if _binary or _bcompressed:
             buf = io.BytesIO(data)
             fmt = ""
             size = 0
-            for f in self.fields:
+            for f in fields:
                 if f.type == b"F" and f.size == 4:
                     fmt += "f" 
                 elif f.type == b"F" and f.size == 8:
@@ -167,18 +123,32 @@ class Converter:
                     print("Uknown type: ", f.type)
                 size += f.size
 
-            if len(self.fields) > 3 and self.fields[3].name == "rgb":
+            if len(fields) > 3 and fields[3].name == "rgb":
                 self._rgb = True
-            for _ in range(points):
+            for _ in range(nr_pts):
                 pt = struct.unpack(fmt, buf.read(size))
                 break
-                self.points.append(pt)
+                points.append(pt)
 
-    def _load_ply(self, path):
+        return points, fields
+
+    def ply(self, path):
+        """
+        Parse a file in .ply format
+
+        Args:
+          path (string): Path to file to be loaded
+        Returns:
+          points (numpy array): Loaded points
+          fields (Field object): Pointcloud field information
+        """
+        points = []
+        fields = []
+
         _ascii = False
         _binary = False
 
-        points = 0
+        nr_pts = 0
         with open(path, "rb") as f:
             while True:
                 line = f.readline()
@@ -202,14 +172,14 @@ class Converter:
                     pass
                 elif line.startswith(b"element"):
                     line = line.split(b" ")
-                    points = int(line[-1])
+                    nr_pts = int(line[-1])
                 elif line.startswith(b"property"):
                     line = line.strip()
                     line = line.split(b" ")
 
-                    self.fields.append(Field(line[2].decode()))
-                    self.fields[-1].type = line[1].decode()
-                    self.fields[-1].size = 4
+                    fields.append(Field(line[2].decode()))
+                    fields[-1].type = line[1].decode()
+                    fields[-1].size = 4
 
                 elif line.startswith(b"end_header"):
                     pass
@@ -218,7 +188,7 @@ class Converter:
             if _ascii:
                 for line in f:
                     pt = line.split()
-                    self.points.append(pt)
+                    points.append(pt)
 
             if _binary:
                 data = f.read()
@@ -227,18 +197,32 @@ class Converter:
             buf = io.BytesIO(data)
             fmt = _endianchar
             size = 0
-            for f in self.fields:
+            for f in fields:
                 if f.type == b"float" and f.size == 4:
                     fmt += "f"
                 else:
                     print("Uknown type: ", f.type)
                 size += f.size
-            for _ in range(points):
+            for _ in range(nr_pts):
                 pt = struct.unpack(fmt, buf.read(size))
-                self.points.append(pt)
+                points.append(pt)
 
-    def _load_zdf(self, path):
+        return points, fields
+
+    def zdf(self, path):
+        """
+        Parse a file in ZIVID .zdf format
+
+        Args:
+          path (string): Path to file to be loaded
+        Returns:
+          points (numpy array): Loaded points
+          fields (Field object): Pointcloud field information
+        """
         from netCDF4 import Dataset
+
+        points = []
+        fields = [] # TODO: collect field information
 
         f = Dataset(path,'r')
         xyz = f['data']['pointcloud'][:,:,:]
@@ -252,35 +236,71 @@ class Converter:
 
         for pt in pc_reshaped:
             if not np.isnan(pt[0]):
-                self.points.append(pt)
+                points.append(pt)
             else:
-                self.points.append([0,0,0,0,0,0,255])
+                points.append([0,0,0,0,0,0,255])
 
-    def _load_xyz(self, path):
-        import ast
+        return points, fields
+
+    def xyz(self, path):
+        """
+        Parse a file in .xyz format
+
+        Args:
+          path (string): Path to file to be loaded
+        Returns:
+          points (numpy array): Loaded points
+        """
+        points = []
 
         with open(path, 'rb') as f:
             for line in f:
                 xyz = line.split()
                 if xyz[0] != b'nan':
-                    self.points.append([float(val) for val in xyz])
+                    points.append([float(val) for val in xyz])
                 else:
-                    self.points.append(len(xyz)*[0])
+                    points.append(len(xyz)*[0])
 
             if len(xyz) == 6:
                 self._rgb = True
             elif len(xyz) == 7:
                 self._rgba = True
 
-    def _load_stl(self, path):
+        return points
+
+    def stl(self, path):
+        """
+        Parse a file in .stl format
+
+        Args:
+          path (string): Path to file to be loaded
+        Returns:
+          points (numpy array): Loaded points
+          fields (Field object): Pointcloud field information
+        """
         from stl import mesh
+
+        points = []
+        fields = [] # TODO: collect field information
 
         stlmesh = mesh.Mesh.from_file(path)
         vects = stlmesh.data["vectors"]
-        self.points = vects.reshape(vects.shape[0]*vects.shape[1], vects.shape[2])
+        points = vects.reshape(vects.shape[0]*vects.shape[1], vects.shape[2])
 
-    def _load_a3d(self, path):
+        return points, fields
+
+    def a3d(self, path):
+        """
+        Parse a file in Tordivel Scorpion .a3d format
+
+        Args:
+          path (string): Path to file to be loaded
+        Returns:
+          points (numpy array): Loaded points
+        """
         import ast
+
+        points = []
 
         with open(path, 'r') as f:
             for line in f:
@@ -289,107 +309,78 @@ class Converter:
                 xyz = "[{}.{}, {}.{}, {}.{}]".format(xyzraw[0], xyzraw[1], \
                                                      xyzraw[2], xyzraw[3], \
                                                      xyzraw[4], xyzraw[5])
-                self.points.append(ast.literal_eval(xyz))
+                points.append(ast.literal_eval(xyz))
 
-    def convert(self, path):
-        print('Saving point cloud to', path)
-        name, extension = self._get_name(path)
-        header = self._generate_header(extension)
+        return points
 
-        with open(path, "wb") as f:
-            f.write(header.encode())
-            for pt in self.points:
-                if self._rgb:
-                    f.write("{} {} {} {} {} {}\n".format(\
-                            pt[0], pt[1], pt[2],\
-                            int(pt[3]), int(pt[4]), int(pt[5])).encode())
 
-                elif self._rgba:
-                    f.write("{} {} {} {} {} {} {}\n".format(\
-                            pt[0], pt[1], pt[2],\
-                            int(pt[3]), int(pt[4]), int(pt[5]), int(pt[6])).encode())
+class Header(object):
 
-                else:
-                    f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
+    def __init__(self, nr_pts, fields, rgb, rgba):
+        """
+        Generates header of file to where pointcloud will be saved
 
-    def _generate_header(self, extension):
-        if extension == '.ply':
+        Args:
+          nr_pts (int): Number of points of pointcloud
+          fields (Fields object): Field information relevant for header
+          rgb (bool): True if pointcloud contains RGB information
+          rgba (bool): True if pointcloud contains RGBA information
+        """
 
-            properties = "property float x\n" \
-                       + "property float y\n" \
-                       + "property float z\n"
+        self._nr_pts = nr_pts
+        self._fields = fields
+        self._rgb = rgb
+        self._rgba = rgba
 
-            if self._rgb:
-                properties += "property uchar red\n" \
-                            + "property uchar green\n" \
-                            + "property uchar blue\n"
-            elif self._rgba:
-                properties += "property uchar red\n" \
-                            + "property uchar green\n" \
-                            + "property uchar blue\n" \
-                            + "property uchar alpha\n"
+    def ply(self):
 
-            header = 'ply\n' \
-                   + "format ascii 1.0\n" \
-                   + "comment https://github.com/SintefRaufossManufacturing/convertcloud\n" \
-                   + "element vertex {}\n".format(len(self.points)) \
-                   + properties \
-                   + "end_header\n"
+        properties = "property float x\n" \
+                   + "property float y\n" \
+                   + "property float z\n"
 
-        elif extension == '.pcd':
-            fields = "x y z"
-            size = "4 4 4"
-            typ = "F F F"
-            if self._rgb or self._rgba:
-                #TODO calculate rgb value from three R G B values (bitshift)
-                fields += " r g b"
-                size += " 4 4 4"
-                typ += " 4 4 4"
-            elif self._rgba:
-                fields += " r g b a"
-                size += " 4 4 4 4"
-                typ += " 4 4 4 4"
+        if self._rgb:
+            properties += "property uchar red\n" \
+                        + "property uchar green\n" \
+                        + "property uchar blue\n"
+        elif self._rgba:
+            properties += "property uchar red\n" \
+                        + "property uchar green\n" \
+                        + "property uchar blue\n" \
+                        + "property uchar alpha\n"
 
-            header = "# .PCD v0.7 - PointCloud Data file format\n" \
-                   + "VERSION 0.7\n" \
-                   + "FIELDS {}\n".format(fields) \
-                   + "SIZE {}\n".format(size) \
-                   + "TYPE {}\n".format(typ) \
-                   + "WIDTH {}\n".format(len(self.points)) \
-                   + "HEIGHT 1\n" \
-                   + "VIEWPOINT 0 0 0 1 0 0 0\n" \
-                   + "POINTS {}\n".format(len(self.points)) \
-                   + "DATA ascii\n"
-
-        elif extension == '.xyz':
-            header = ''
-
-        else:
-            print("Error: Can't convert to {}".format(extension))
-            sys.exit(1)
+        header = 'ply\n' \
+               + "format ascii 1.0\n" \
+               + "comment https://github.com/SintefRaufossManufacturing/convertcloud\n" \
+               + "element vertex {}\n".format(self._nr_pts) \
+               + properties \
+               + "end_header\n"
 
         return header
 
-    def _decode_points(self):
-        for num, point in enumerate(self.points):
-            if isinstance(point[0], bytes):
-                self.points[num] = [val.decode() for val in point]
-            else:
-                break
+    def pcd(self): 
 
-        self.points = np.array(self.points).astype("float32")
-                
-            
-def main():
-    if len(sys.argv) != 3:
-        print("usage: converter <original.format1> <converted.format2>")
-        print("formats supported: .ply, .pcd, .xyz, .zdf")
-        sys.exit(1)
+        fields = "x y z"
+        size = "4 4 4"
+        typ = "F F F"
+        if self._rgb or self._rgba:
+            #TODO calculate rgb value from three R G B values (bitshift)
+            fields += " r g b"
+            size += " 4 4 4"
+            typ += " 4 4 4"
+        elif self._rgba:
+            fields += " r g b a"
+            size += " 4 4 4 4"
+            typ += " 4 4 4 4"
 
-    c = Converter()
+        header = "# .PCD v0.7 - PointCloud Data file format\n" \
+               + "VERSION 0.7\n" \
+               + "FIELDS {}\n".format(self._fields) \
+               + "SIZE {}\n".format(size) \
+               + "TYPE {}\n".format(typ) \
+               + "WIDTH {}\n".format(self._nr_pts) \
+               + "HEIGHT 1\n" \
+               + "VIEWPOINT 0 0 0 1 0 0 0\n" \
+               + "POINTS {}\n".format(self._nr_pts) \
+               + "DATA ascii\n"
 
-    c.load_points(sys.argv[1])
-    c.convert(sys.argv[2])
-
-if __name__ == "__main__":
-    main()
+        return header

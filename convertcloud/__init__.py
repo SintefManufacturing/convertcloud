@@ -1,1 +1,1 @@
-from convertcloud.convertcloud import Converter
+from .converter import Converter

@@ -9,16 +9,16 @@ Simple pointcloud format converter. Supported conversions, from and to:
 
 Use from shell: 
 ```sh
-$ convertcloud original.format1 converted.format2 
+$ cvc original.format1 converted.format2 
  
 ```
 
 Use from python:
 ```python
-import convertcloud
+import convertcloud as cvc
 
-cvc = convertcloud.Converter()
-cvc.load_points("original.format1")
-cvc.convert("converted.format2")
+conv = cvc.Converter()
+conv.load_points("original.format1")
+conv.convert("converted.format2")
 ```
 

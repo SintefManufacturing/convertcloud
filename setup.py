@@ -11,7 +11,7 @@ setup(name="convertcloud",
       license="GNU General Public License v3",
 
       entry_points={"console_scripts":
-          ["convertcloud = convertcloud.convertcloud:main"]
+          ["cvc = convertcloud.converter:main"]
                     },
       classifiers=[
             "Programming Language :: Python",
