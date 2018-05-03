@@ -1,7 +1,7 @@
 ply
 format ascii 1.0
 comment https://github.com/SintefRaufossManufacturing/convertcloud
-element vertex 3
+element vertex 2
 property float x
 property float y
 property float z

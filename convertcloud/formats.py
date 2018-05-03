@@ -357,18 +357,18 @@ class Header(object):
 
         return header
 
-    def pcd(self): 
-
-        fields = "x y z"
+    def pcd(self):
+        if self._fields == None:
+            self._fields = "x y z"
         size = "4 4 4"
         typ = "F F F"
         if self._rgb or self._rgba:
             #TODO calculate rgb value from three R G B values (bitshift)
-            fields += " r g b"
+            self._fields += " r g b"
             size += " 4 4 4"
             typ += " 4 4 4"
         elif self._rgba:
-            fields += " r g b a"
+            self._fields += " r g b a"
             size += " 4 4 4 4"
             typ += " 4 4 4 4"
 
