@@ -1,14 +1,14 @@
 from setuptools import setup
 
 setup(name="convertcloud",
-      version="0.0.1",
+      version="0.1.0",
       description="Pointcloud format converter",
-      author="Alvaro Capellan",
+      author="Alvaro Capellan, Olivier Roulet-Dubonnet",
       author_email="capellan.alvaro@gmail.com",
       url="https://github.com/alvcap/convertcloud",
       packages=["convertcloud"],
       provides=["convertcloud"],
-      license="GNU General Public License v3",
+      license="GNU Lesser General Public License v3",
 
       entry_points={"console_scripts":
           ["cvc = convertcloud.converter:main"]
