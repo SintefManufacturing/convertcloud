@@ -85,6 +85,8 @@ class Converter:
                     f.write("{} {} {} {} {} {} {}\n".format(\
                             pt[0], pt[1], pt[2],\
                             int(pt[3]), int(pt[4]), int(pt[5]), int(pt[6])).encode())
+                elif extension == ".a3d":
+                    f.write("{},{},{}\n".format(pt[0], pt[1], pt[2]).replace(".", ",").encode())
 
                 else:
                     f.write("{} {} {}\n".format(pt[0], pt[1], pt[2]).encode())
