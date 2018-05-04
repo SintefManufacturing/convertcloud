@@ -358,13 +358,29 @@ class Header(object):
         return header
 
     def pcd(self):
-        if self._fields == None:
-            self._fields = "x y z"
-        size = "4 4 4"
-        typ = "F F F"
+        if self._fields != None:
+            fields = ""
+            size = ""
+            typ = ""
+            types = {"float":"F", "int":"I", "uint":"U"}
+
+            for field in self._fields:
+                fields += field.name + " "
+                size += str(field.size) + " "
+                typ += types[field.type] + " "
+
+            # Remove last space
+            fields = fields[:-1]
+            size = size[:-1]
+            typ = typ[:-1]
+
+        else:
+            fields = "x y z"
+            size = "4 4 4"
+            typ = "F F F"
         if self._rgb or self._rgba:
             #TODO calculate rgb value from three R G B values (bitshift)
-            self._fields += " r g b"
+            fields += " r g b"
             size += " 4 4 4"
             typ += " 4 4 4"
         elif self._rgba:
@@ -374,7 +390,7 @@ class Header(object):
 
         header = "# .PCD v0.7 - PointCloud Data file format\n" \
                + "VERSION 0.7\n" \
-               + "FIELDS {}\n".format(self._fields) \
+               + "FIELDS {}\n".format(fields) \
                + "SIZE {}\n".format(size) \
                + "TYPE {}\n".format(typ) \
                + "WIDTH {}\n".format(self._nr_pts) \
