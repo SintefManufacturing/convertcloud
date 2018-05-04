@@ -130,7 +130,7 @@ class Load(object):
                 break
                 points.append(pt)
 
-        return points, fields
+        return np.array(points), fields
 
     def ply(self, path):
         """
@@ -207,7 +207,7 @@ class Load(object):
                 pt = struct.unpack(fmt, buf.read(size))
                 points.append(pt)
 
-        return points, fields
+        return np.array(points), fields
 
     def zdf(self, path):
         """
@@ -222,7 +222,7 @@ class Load(object):
         from netCDF4 import Dataset
 
         points = []
-        fields = [] # TODO: collect field information
+        fields = [] 
 
         f = Dataset(path,'r')
         xyz = f['data']['pointcloud'][:,:,:]
@@ -234,13 +234,19 @@ class Load(object):
 
         self._rgba = True
 
+        for val in ["x", "y", "z", "rgb"]:
+            field = Field(val)
+            field.size = 4
+            field.type = "float"
+            fields.append(field)
+
         for pt in pc_reshaped:
             if not np.isnan(pt[0]):
                 points.append(pt)
             else:
                 points.append([0,0,0,0,0,0,255])
 
-        return points, fields
+        return np.array(points), fields
 
     def xyz(self, path):
         """
@@ -252,6 +258,7 @@ class Load(object):
           points (numpy array): Loaded points
         """
         points = []
+        fields = []
 
         with open(path, 'rb') as f:
             for line in f:
@@ -259,14 +266,25 @@ class Load(object):
                 if xyz[0] != b'nan':
                     points.append([float(val) for val in xyz])
                 else:
-                    points.append(len(xyz)*[0])
+                    points.append(len(xyz)*[0.0])
 
-            if len(xyz) == 6:
-                self._rgb = True
-            elif len(xyz) == 7:
-                self._rgba = True
+        for val in ["x", "y", "z"]:
+            field = Field(val)
+            field.size = 4
+            field.type = "float"
+            fields.append(field)
 
-        return points
+        if len(xyz) == 6:
+            self._rgb = True
+            field = Field("rgb")
+            field.size = 4
+            field.type = "float"
+            fields.append(field)
+
+        elif len(xyz) == 7:
+            self._rgba = True
+
+        return np.array(points), fields
 
     def stl(self, path):
         """
@@ -281,13 +299,19 @@ class Load(object):
         from stl import mesh
 
         points = []
-        fields = [] # TODO: collect field information
+        fields = []
 
         stlmesh = mesh.Mesh.from_file(path)
         vects = stlmesh.data["vectors"]
         points = vects.reshape(vects.shape[0]*vects.shape[1], vects.shape[2])
 
-        return points, fields
+        for val in ["x", "y", "z"]:
+            field = Field(val)
+            field.size = 4
+            field.type = "float"
+            fields.append(field)
+
+        return np.array(points), fields
 
     def a3d(self, path):
         """
@@ -301,6 +325,7 @@ class Load(object):
         import ast
 
         points = []
+        fields = []
 
         with open(path, 'r') as f:
             for line in f:
@@ -311,7 +336,13 @@ class Load(object):
                                                      xyzraw[4], xyzraw[5])
                 points.append(ast.literal_eval(xyz))
 
-        return points
+        for val in ["x", "y", "z"]:
+            field = Field(val)
+            field.size = 4
+            field.type = "float"
+            fields.append(field)
+
+        return np.array(points), fields
 
 
 class Header(object):

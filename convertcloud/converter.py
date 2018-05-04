@@ -42,9 +42,9 @@ class Converter:
         elif extension in [".stl", ".STL"]:
             self.points, self.fields = load.stl(path)
         elif extension == ".xyz":
-            self.points = load.xyz(path)
+            self.points, self.fields = load.xyz(path)
         elif extension == ".a3d":
-            self.points = load.a3d(path)
+            self.points, self.fields = load.a3d(path)
         else:
             print("Error: Unknown file extension {}".format(extension))
             sys.exit(1)

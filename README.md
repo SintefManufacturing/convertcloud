@@ -10,6 +10,7 @@ Simple pointcloud format converter. Supported conversions:
 | .xyz |![green]|![green]|![green]|![gray]|![gray]|
 | .zdf |![green]|![red]|![gray]|![gray]|![green]|
 | .a3d |![green]|![green]|![green]|![gray]|![gray]|
+| .stl |![green]|![red]|![green]|![red]|![gray]|
 
 Use from shell: 
 ```sh

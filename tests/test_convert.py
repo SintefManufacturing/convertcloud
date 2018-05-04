@@ -37,3 +37,36 @@ def test_convert_pcd(tmpdir):
         ref_string = ref_file.read()
     assert output.read() == ref_string
 
+def test_pcd2ply(tmpdir):
+    converter.load_points("filetest.pcd")
+    output = tmpdir.join("outputtest.ply")
+    converter.convert(str(output))
+    with open("filetest.ply", "r") as ref_file:
+        ref_string = ref_file.read()
+    assert output.read() == ref_string
+
+def test_ply2pcd(tmpdir):
+    converter.load_points("filetest.ply")
+    output = tmpdir.join("outputtest.pcd")
+    converter.convert(str(output))
+    with open("filetest.pcd", "r") as ref_file:
+        ref_string = ref_file.read()
+    assert output.read() == ref_string
+
+def test_xyz2ply(tmpdir):
+    converter.load_points("filetest.xyz")
+    output = tmpdir.join("outputtest.ply")
+    converter.convert(str(output))
+    with open("filetest.ply", "r") as ref_file:
+        ref_string = ref_file.read()
+    assert output.read() == ref_string
+
+def test_xyz2pcd(tmpdir):
+    converter.load_points("filetest.xyz")
+    output = tmpdir.join("outputtest.pcd")
+    converter.convert(str(output))
+    with open("filetest.pcd", "r") as ref_file:
+        ref_string = ref_file.read()
+    assert output.read() == ref_string
+
+
