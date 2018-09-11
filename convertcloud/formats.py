@@ -172,7 +172,8 @@ class Load(object):
                     pass
                 elif line.startswith(b"element"):
                     line = line.split(b" ")
-                    nr_pts = int(line[-1])
+                    if line[1] == b"vertex":
+                        nr_pts = int(line[-1])
                 elif line.startswith(b"property"):
                     line = line.strip()
                     line = line.split(b" ")
@@ -189,6 +190,10 @@ class Load(object):
                 for line in f:
                     pt = line.split()
                     points.append(pt)
+
+                    # Do not append faces
+                    if len(points) == nr_pts:
+                        break
 
             if _binary:
                 data = f.read()
